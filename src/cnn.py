@@ -16,13 +16,14 @@ def CNN():
     )
     return model
 
-def train_cnn(X_train, y_train):
+def train_cnn(X_train, y_train, X_val=None, y_val=None):
     model = CNN()
+    validation_data = (X_val, y_val) if X_val is not None else None
     history = model.fit(
         X_train, y_train,
         epochs=config.EPOCHS,
         batch_size=config.BATCH_SIZE,
-        validation_split=0.3,
-        verbose=0
+        validation_data=validation_data,
+        verbose=1
     )
     return model, history
