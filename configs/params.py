@@ -25,7 +25,7 @@ class Config:
 
     # 改进的模型参数
     CNN_FILTERS = 64  # 增加卷积核数量
-    LSTM_UNITS = 128  # 增加LSTM单元数
+    BiLSTM_UNITS = 128  # 增加LSTM单元数
     DROPOUT_RATE = 0.25  # 调整Dropout率
     REGULARIZATION = 0.001  # 降低正则化系数
 
