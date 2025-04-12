@@ -9,7 +9,7 @@ class ModelTrainer:
             lambda epoch: config.INIT_LR * (0.5 ** (epoch // 10))
         )
         self.early_stop = EarlyStopping(
-            patience=5,
+            patience=10,
             restore_best_weights=True
         )
 

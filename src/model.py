@@ -38,12 +38,12 @@ class BiLSTM_CNN(Model):
             'cnn_filters': 64,#'cnn_filters': n/2
             'cnn_kernel_sizes': [5, 7, 9],
             'bilstm_units': [128, 64],  # [第一层units, 第二层units]
-            'dropout_rate': 0.2,
-            'recurrent_dropout': 0.2,
+            'dropout_rate': 0.3,
+            'recurrent_dropout': 0.3,
             'spatial_attention_kernel': 9,#与最大匹配
             'dense_units': [256, 128],#'dense_units': [n*2, n],
-            'l2_reg': 0.001,
-            'classifier_dropout': 0.3
+            'l2_reg': 0.002,
+            'classifier_dropout': 0.4
         }
         if model_config:
             self.config.update(model_config)
@@ -135,26 +135,42 @@ class BiLSTM_CNN(Model):
         # 分类
         return self.classifier(global_features)
 
+    # def build_custom_loss(self):
+    #     def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
+    #         pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    #         pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    #
+    #         pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
+    #         pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
+    #
+    #         return -tf.reduce_mean(
+    #             alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
+    #             (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
+    #         )
+    #
+    #     def temporal_smoothness(y_true, y_pred):
+    #         delta = tf.abs(y_pred[1:] - y_pred[:-1])
+    #         return 0.005 * tf.reduce_mean(delta)
+    #
+    #     def total_loss(y_true, y_pred):
+    #         return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
+    #
+    #     return total_loss
     def build_custom_loss(self):
-        def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
-            pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
-            pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+        def custom_loss(y_true, y_pred):
+            # 基础的二元交叉熵
+            bce = tf.keras.losses.BinaryCrossentropy(from_logits=False)(y_true, y_pred)
 
-            pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
-            pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
+            # 添加focal loss成分以处理类别不平衡
+            gamma = 2.0
+            alpha = 0.25
+            pt = tf.where(y_true == 1, y_pred, 1 - y_pred)
+            focal_loss = -alpha * tf.pow(1. - pt, gamma) * tf.math.log(pt + 1e-7)
+            focal_loss = tf.reduce_mean(focal_loss)
 
-            return -tf.reduce_mean(
-                alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
-                (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
-            )
+            # 最终损失是两者的加权组合
+            return 0.7 * bce + 0.3 * focal_loss
 
-        def temporal_smoothness(y_true, y_pred):
-            delta = tf.abs(y_pred[1:] - y_pred[:-1])
-            return 0.005 * tf.reduce_mean(delta)
-
-        def total_loss(y_true, y_pred):
-            return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
-
-        return total_loss
+        return custom_loss
 
 

@@ -97,7 +97,7 @@ def train_improved_gru(X_train, y_train, X_val, y_val):
     history = model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
-        epochs=100,
+        epochs=50,
         batch_size=64,
         callbacks=[early_stopping, reduce_lr],
         class_weight={0: 1, 1: 5}  # 处理类别不平衡
