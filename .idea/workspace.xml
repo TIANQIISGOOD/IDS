@@ -4,15 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="1">
-      <change afterPath="$PROJECT_DIR$/src/ablation_models.py" afterDir="false" />
+    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/configs/params.py" beforeDir="false" afterPath="$PROJECT_DIR$/configs/params.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/evaluator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/evaluator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gru.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/gru.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ablation_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ablation_models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/trainer.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,12 +108,21 @@
       <option name="project" value="LOCAL" />
       <updated>1744197872402</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="2">
+      <option name="closed" value="true" />
+      <created>1744444770971</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1744444770971</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="test" />
     <MESSAGE value="1" />
-    <option name="LAST_COMMIT_MESSAGE" value="1" />
+    <MESSAGE value="2" />
+    <option name="LAST_COMMIT_MESSAGE" value="2" />
   </component>
 </project>

@@ -3,30 +3,76 @@ from tensorflow.keras import layers, Model
 from configs.params import config
 
 
-class TemporalAttention(layers.Layer):
-    def __init__(self, units):
-        super(TemporalAttention, self).__init__()
-        self.W = layers.Dense(units)
-        self.V = layers.Dense(1)
+class SENet(layers.Layer):
+    def __init__(self, reduction_ratio=16):
+        super(SENet, self).__init__()
+        self.reduction_ratio = reduction_ratio
+
+    def build(self, input_shape):
+        self.squeeze = layers.GlobalAveragePooling1D()
+        channels = input_shape[-1]
+        self.excitation = tf.keras.Sequential([
+            layers.Dense(channels // self.reduction_ratio, activation='relu'),
+            layers.Dense(channels, activation='sigmoid')
+        ])
 
     def call(self, inputs):
-        score = self.V(tf.nn.tanh(self.W(inputs)))
-        attention_weights = tf.nn.softmax(score, axis=1)
-        context_vector = inputs * attention_weights
-        return context_vector
+        # Squeeze
+        squeeze = self.squeeze(inputs)
+        # Excitation
+        excitation = self.excitation(squeeze)
+        # Reshape为与输入相同的维度
+        excitation = tf.expand_dims(excitation, axis=1)
+        # Scale
+        return inputs * excitation
 
 
-class SpatialAttention(layers.Layer):
-    def __init__(self, kernel_size=7):  # 添加kernel_size参数
-        super(SpatialAttention, self).__init__()
-        self.conv1d = layers.Conv1D(1, kernel_size=kernel_size, padding='same')
+class MultiHeadSelfAttention(layers.Layer):
+    def __init__(self, d_model, num_heads):
+        super(MultiHeadSelfAttention, self).__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+
+        assert d_model % num_heads == 0
+        self.depth = d_model // num_heads
+
+        self.query_dense = layers.Dense(d_model)
+        self.key_dense = layers.Dense(d_model)
+        self.value_dense = layers.Dense(d_model)
+
+        self.dense = layers.Dense(d_model)
+
+    def split_heads(self, x, batch_size):
+        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
+        return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, inputs):
-        avg_pool = tf.reduce_mean(inputs, axis=2, keepdims=True)
-        max_pool = tf.reduce_max(inputs, axis=2, keepdims=True)
-        concat = tf.concat([avg_pool, max_pool], axis=2)
-        spatial_attention = tf.nn.sigmoid(self.conv1d(concat))
-        return inputs * spatial_attention
+        batch_size = tf.shape(inputs)[0]
+
+        # 线性变换
+        query = self.query_dense(inputs)
+        key = self.key_dense(inputs)
+        value = self.value_dense(inputs)
+
+        # 分割头
+        query = self.split_heads(query, batch_size)
+        key = self.split_heads(key, batch_size)
+        value = self.split_heads(value, batch_size)
+
+        # 缩放点积注意力
+        scaled_attention_logits = tf.matmul(query, key, transpose_b=True)
+        scaled_attention_logits = scaled_attention_logits / tf.math.sqrt(tf.cast(self.depth, tf.float32))
+
+        # Softmax
+        attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
+
+        # 注意力输出
+        output = tf.matmul(attention_weights, value)
+        output = tf.transpose(output, perm=[0, 2, 1, 3])
+        output = tf.reshape(output, (batch_size, -1, self.d_model))
+
+        output = self.dense(output)
+        return output
 
 
 class BiLSTM_CNN(Model):
@@ -35,15 +81,16 @@ class BiLSTM_CNN(Model):
 
         # 使用默认配置或传入的配置
         self.config = {
-            'cnn_filters': 64,#'cnn_filters': n/2
+            'cnn_filters': 64,
             'cnn_kernel_sizes': [5, 7, 9],
-            'bilstm_units': [128, 64],  # [第一层units, 第二层units]
-            'dropout_rate': 0.3,
-            'recurrent_dropout': 0.3,
-            'spatial_attention_kernel': 9,#与最大匹配
-            'dense_units': [256, 128],#'dense_units': [n*2, n],
-            'l2_reg': 0.002,
-            'classifier_dropout': 0.4
+            'bilstm_units': [128, 64],
+            'dropout_rate': 0.2,
+            'recurrent_dropout': 0.2,
+            'spatial_attention_ratio': 16,  # SE模块的压缩比
+            'temporal_attention_heads': 8,  # Transformer的头数
+            'dense_units': [256, 128],
+            'l2_reg': 0.001,
+            'classifier_dropout': 0.3
         }
         if model_config:
             self.config.update(model_config)
@@ -87,9 +134,10 @@ class BiLSTM_CNN(Model):
             ])
 
         # 注意力机制
-        self.temporal_attention = TemporalAttention(self.config['bilstm_units'][0] * 2)
-        self.spatial_attention = SpatialAttention(
-            kernel_size=self.config['spatial_attention_kernel']
+        self.spatial_attention = SENet(reduction_ratio=self.config['spatial_attention_ratio'])
+        self.temporal_attention = MultiHeadSelfAttention(
+            d_model=self.config['bilstm_units'][0] * 2,
+            num_heads=self.config['temporal_attention_heads']
         )
 
         # 分类头
@@ -118,7 +166,7 @@ class BiLSTM_CNN(Model):
         fused_features = self.feature_fusion(conv_features)
         fused_features = self.fusion_conv(fused_features)
 
-        # 3. 空间注意力 (提前到BiLSTM之前)
+        # SE注意力
         spatial_context = self.spatial_attention(fused_features)
 
         # BiLSTM处理
@@ -126,7 +174,7 @@ class BiLSTM_CNN(Model):
         for layer in self.bilstm_layers:
             lstm_features = layer(lstm_features)
 
-        # 时间注意力
+        # Transformer自注意力
         temporal_context = self.temporal_attention(lstm_features)
 
         # 全局池化
@@ -135,42 +183,24 @@ class BiLSTM_CNN(Model):
         # 分类
         return self.classifier(global_features)
 
-    # def build_custom_loss(self):
-    #     def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
-    #         pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
-    #         pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
-    #
-    #         pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
-    #         pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
-    #
-    #         return -tf.reduce_mean(
-    #             alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
-    #             (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
-    #         )
-    #
-    #     def temporal_smoothness(y_true, y_pred):
-    #         delta = tf.abs(y_pred[1:] - y_pred[:-1])
-    #         return 0.005 * tf.reduce_mean(delta)
-    #
-    #     def total_loss(y_true, y_pred):
-    #         return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
-    #
-    #     return total_loss
     def build_custom_loss(self):
-        def custom_loss(y_true, y_pred):
-            # 基础的二元交叉熵
-            bce = tf.keras.losses.BinaryCrossentropy(from_logits=False)(y_true, y_pred)
+        def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
+            pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+            pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
 
-            # 添加focal loss成分以处理类别不平衡
-            gamma = 2.0
-            alpha = 0.25
-            pt = tf.where(y_true == 1, y_pred, 1 - y_pred)
-            focal_loss = -alpha * tf.pow(1. - pt, gamma) * tf.math.log(pt + 1e-7)
-            focal_loss = tf.reduce_mean(focal_loss)
+            pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
+            pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
 
-            # 最终损失是两者的加权组合
-            return 0.7 * bce + 0.3 * focal_loss
+            return -tf.reduce_mean(
+                alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
+                (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
+            )
 
-        return custom_loss
+        def temporal_smoothness(y_true, y_pred):
+            delta = tf.abs(y_pred[1:] - y_pred[:-1])
+            return 0.005 * tf.reduce_mean(delta)
 
+        def total_loss(y_true, y_pred):
+            return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
 
+        return total_loss

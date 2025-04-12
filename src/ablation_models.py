@@ -1,44 +1,69 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from configs.params import config
+from .model import SENet, MultiHeadSelfAttention  # 引入新的注意力机制
 
 
-class SpatialOnlyModel(Model):
-    """仅保留空间特征提取模块（多尺度CNN + 空间注意力 + 分类头）"""
+class SpatialOnly(Model):
+    """仅保留空间特征的模型（CNN + SENet）"""
 
-    def __init__(self):
-        super(SpatialOnlyModel, self).__init__()
+    def __init__(self, config=None):
+        super(SpatialOnly, self).__init__()
+
+        # 使用默认配置或传入的配置
+        self.config = {
+            'cnn_filters': 64,
+            'cnn_kernel_sizes': [5, 7, 9],
+            'dropout_rate': 0.2,
+            'spatial_attention_ratio': 16,  # SE模块的压缩比
+            'dense_units': [256, 128],
+            'l2_reg': 0.001,
+            'classifier_dropout': 0.3
+        }
+        if config:
+            self.config.update(config)
 
         # 多尺度CNN特征提取
         self.multi_scale_convs = []
-        for kernel_size in [3, 5, 7]:
+        for kernel_size in self.config['cnn_kernel_sizes']:
             conv_block = tf.keras.Sequential([
-                layers.Conv1D(64, kernel_size=kernel_size, padding='same', activation='relu'),
+                layers.Conv1D(
+                    self.config['cnn_filters'],
+                    kernel_size=kernel_size,
+                    padding='same',
+                    activation='relu'
+                ),
                 layers.BatchNormalization(),
                 layers.MaxPooling1D(2, padding='same'),
-                layers.Dropout(0.2)
+                layers.Dropout(self.config['dropout_rate'])
             ])
             self.multi_scale_convs.append(conv_block)
 
         # 特征融合层
         self.feature_fusion = layers.Concatenate()
-        self.fusion_conv = layers.Conv1D(128, kernel_size=1, padding='same')
+        self.fusion_conv = layers.Conv1D(
+            self.config['cnn_filters'] * 2,
+            kernel_size=1,
+            padding='same'
+        )
 
-        # 空间注意力机制
-        self.spatial_attention = layers.Dense(1, activation='tanh')
+        # SENet空间注意力
+        self.spatial_attention = SENet(reduction_ratio=self.config['spatial_attention_ratio'])
 
         # 分类头
-        self.classifier = tf.keras.Sequential([
-            layers.Dense(256, activation='relu',
-                         kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-            layers.BatchNormalization(),
-            layers.Dropout(0.3),
-            layers.Dense(128, activation='relu',
-                         kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-            layers.BatchNormalization(),
-            layers.Dropout(0.3),
-            layers.Dense(1, activation='sigmoid')
-        ])
+        self.classifier = self._build_classifier()
+
+    def _build_classifier(self):
+        classifier = tf.keras.Sequential()
+        for units in self.config['dense_units']:
+            classifier.add(layers.Dense(
+                units,
+                activation='relu',
+                kernel_regularizer=tf.keras.regularizers.l2(self.config['l2_reg'])
+            ))
+            classifier.add(layers.BatchNormalization())
+            classifier.add(layers.Dropout(self.config['classifier_dropout']))
+        classifier.add(layers.Dense(1, activation='sigmoid'))
+        return classifier
 
     def call(self, inputs):
         # 多尺度CNN特征提取
@@ -50,57 +75,70 @@ class SpatialOnlyModel(Model):
         fused_features = self.feature_fusion(conv_features)
         fused_features = self.fusion_conv(fused_features)
 
-        # 空间注意力
-        attention_weights = self.spatial_attention(fused_features)
-        attended_features = fused_features * attention_weights
+        # SENet空间注意力
+        spatial_context = self.spatial_attention(fused_features)
 
         # 全局池化
-        global_features = tf.reduce_mean(attended_features, axis=1)
+        global_features = tf.reduce_mean(spatial_context, axis=1)
 
         # 分类
         return self.classifier(global_features)
 
-    def build_custom_loss(self):
-        """自定义损失函数"""
 
-        def custom_loss(y_true, y_pred):
-            # 二元交叉熵
-            bce = tf.keras.losses.BinaryCrossentropy(from_logits=False)(y_true, y_pred)
-            return bce
+class TemporalOnly(Model):
+    """仅保留时间特征的模型（BiLSTM + Transformer自注意力）"""
 
-        return custom_loss
+    def __init__(self, config=None):
+        super(TemporalOnly, self).__init__()
 
+        # 使用默认配置或传入的配置
+        self.config = {
+            'bilstm_units': [128, 64],
+            'dropout_rate': 0.2,
+            'recurrent_dropout': 0.2,
+            'temporal_attention_heads': 8,  # Transformer的头数
+            'dense_units': [256, 128],
+            'l2_reg': 0.001,
+            'classifier_dropout': 0.3
+        }
+        if config:
+            self.config.update(config)
 
-class TemporalOnlyModel(Model):
-    """仅保留时间特征提取模块（多层次BiLSTM + 时间注意力 + 分类头）"""
+        # 层次化BiLSTM
+        self.bilstm_layers = []
+        for units in self.config['bilstm_units']:
+            self.bilstm_layers.extend([
+                layers.Bidirectional(
+                    layers.LSTM(
+                        units,
+                        return_sequences=True,
+                        recurrent_dropout=self.config['recurrent_dropout']
+                    )
+                ),
+                layers.BatchNormalization()
+            ])
 
-    def __init__(self):
-        super(TemporalOnlyModel, self).__init__()
-
-        # 多层次BiLSTM
-        self.bilstm_layers = [
-            layers.Bidirectional(layers.LSTM(128, return_sequences=True,
-                                             recurrent_dropout=0.2)),
-            layers.BatchNormalization(),
-            layers.Bidirectional(layers.LSTM(64, return_sequences=True,
-                                             recurrent_dropout=0.2))
-        ]
-
-        # 时间注意力机制
-        self.temporal_attention = layers.Dense(1, activation='tanh')
+        # Transformer自注意力
+        self.temporal_attention = MultiHeadSelfAttention(
+            d_model=self.config['bilstm_units'][0] * 2,
+            num_heads=self.config['temporal_attention_heads']
+        )
 
         # 分类头
-        self.classifier = tf.keras.Sequential([
-            layers.Dense(256, activation='relu',
-                         kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-            layers.BatchNormalization(),
-            layers.Dropout(0.3),
-            layers.Dense(128, activation='relu',
-                         kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-            layers.BatchNormalization(),
-            layers.Dropout(0.3),
-            layers.Dense(1, activation='sigmoid')
-        ])
+        self.classifier = self._build_classifier()
+
+    def _build_classifier(self):
+        classifier = tf.keras.Sequential()
+        for units in self.config['dense_units']:
+            classifier.add(layers.Dense(
+                units,
+                activation='relu',
+                kernel_regularizer=tf.keras.regularizers.l2(self.config['l2_reg'])
+            ))
+            classifier.add(layers.BatchNormalization())
+            classifier.add(layers.Dropout(self.config['classifier_dropout']))
+        classifier.add(layers.Dense(1, activation='sigmoid'))
+        return classifier
 
     def call(self, inputs):
         # BiLSTM处理
@@ -108,22 +146,12 @@ class TemporalOnlyModel(Model):
         for layer in self.bilstm_layers:
             lstm_features = layer(lstm_features)
 
-        # 时间注意力
-        attention_weights = self.temporal_attention(lstm_features)
-        attended_features = lstm_features * attention_weights
+        # Transformer自注意力
+        temporal_context = self.temporal_attention(lstm_features)
 
         # 全局池化
-        global_features = tf.reduce_mean(attended_features, axis=1)
+        global_features = tf.reduce_mean(temporal_context, axis=1)
 
         # 分类
         return self.classifier(global_features)
 
-    def build_custom_loss(self):
-        """自定义损失函数"""
-
-        def custom_loss(y_true, y_pred):
-            # 二元交叉熵
-            bce = tf.keras.losses.BinaryCrossentropy(from_logits=False)(y_true, y_pred)
-            return bce
-
-        return custom_loss
