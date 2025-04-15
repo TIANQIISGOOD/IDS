@@ -62,24 +62,84 @@ def main():
         histories['CNN-BiLSTM'] = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
         results['CNN-BiLSTM'] = evaluator.evaluate(model_cnn_bilstm, X_test_dl, y_test)
         results['CNN-BiLSTM']['detection_time'] = measure_detection_time(model_cnn_bilstm, X_test_dl)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name1='CNN-BiLSTM'
+        metrics1 = results[model_name1]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name1,
+            metrics1['accuracy'],
+            metrics1['precision'],
+            metrics1['recall'],
+            metrics1['f1'],
+            metrics1['auc'],
+            metrics1['detection_time'] * 1000  # 转换为毫秒
+        ))
 
-        # # CNN
-        # print("\nTraining CNN model...")
-        # cnn_model, histories['CNN'] = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
-        # results['CNN'] = evaluator.evaluate(cnn_model, X_test_dl, y_test)
-        # results['CNN']['detection_time'] = measure_detection_time(cnn_model, X_test_dl)
-        #
-        # # BiLSTM
-        # print("\nTraining BiLSTM model...")
-        # bilstm_model, histories['BiLSTM'] = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
-        # results['BiLSTM'] = evaluator.evaluate(bilstm_model, X_test_dl, y_test)
-        # results['BiLSTM']['detection_time'] = measure_detection_time(bilstm_model, X_test_dl)
-        #
-        # # GRU
-        # print("\nTraining GRU model...")
-        # gru_model, histories['GRU'] = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
-        # results['GRU'] = evaluator.evaluate(gru_model, X_test_dl, y_test)
-        # results['GRU']['detection_time'] = measure_detection_time(gru_model, X_test_dl)
+        # CNN
+        print("\nTraining CNN model...")
+        cnn_model, histories['CNN'] = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
+        results['CNN'] = evaluator.evaluate(cnn_model, X_test_dl, y_test)
+        results['CNN']['detection_time'] = measure_detection_time(cnn_model, X_test_dl)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name2='CNN'
+        metrics2 = results[model_name2]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name2,
+            metrics2['accuracy'],
+            metrics2['precision'],
+            metrics2['recall'],
+            metrics2['f1'],
+            metrics2['auc'],
+            metrics2['detection_time'] * 1000  # 转换为毫秒
+        ))
+
+        # BiLSTM
+        print("\nTraining BiLSTM model...")
+        bilstm_model, histories['BiLSTM'] = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
+        results['BiLSTM'] = evaluator.evaluate(bilstm_model, X_test_dl, y_test)
+        results['BiLSTM']['detection_time'] = measure_detection_time(bilstm_model, X_test_dl)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name3='BiLSTM'
+        metrics3 = results[model_name3]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name3,
+            metrics3['accuracy'],
+            metrics3['precision'],
+            metrics3['recall'],
+            metrics3['f1'],
+            metrics3['auc'],
+            metrics3['detection_time'] * 1000  # 转换为毫秒
+        ))
+
+        # GRU
+        print("\nTraining GRU model...")
+        gru_model, histories['GRU'] = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+        results['GRU'] = evaluator.evaluate(gru_model, X_test_dl, y_test)
+        results['GRU']['detection_time'] = measure_detection_time(gru_model, X_test_dl)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name4='GRU'
+        metrics4 = results[model_name4]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name4,
+            metrics4['accuracy'],
+            metrics4['precision'],
+            metrics4['recall'],
+            metrics4['f1'],
+            metrics4['auc'],
+            metrics4['detection_time'] * 1000  # 转换为毫秒
+        ))
 
         # 2. 消融实验
         print("\n=== 训练消融实验模型 ===")
@@ -91,6 +151,21 @@ def main():
         histories['Spatial-Only'] = trainer_spatial.train(X_train, y_train, X_test, y_test)
         results['Spatial-Only'] = evaluator.evaluate(spatial_model, X_test, y_test)
         results['Spatial-Only']['detection_time'] = measure_detection_time(spatial_model, X_test)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name5='Spatial-Only'
+        metrics5 = results[model_name5]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name5,
+            metrics5['accuracy'],
+            metrics5['precision'],
+            metrics5['recall'],
+            metrics5['f1'],
+            metrics5['auc'],
+            metrics5['detection_time'] * 1000  # 转换为毫秒
+        ))
 
         # 仅时间特征模型
         print("\nTraining Temporal-Only Model...")
@@ -99,6 +174,21 @@ def main():
         histories['Temporal-Only'] = trainer_temporal.train(X_train, y_train, X_test, y_test)
         results['Temporal-Only'] = evaluator.evaluate(temporal_model, X_test, y_test)
         results['Temporal-Only']['detection_time'] = measure_detection_time(temporal_model, X_test)
+        print("{:<25} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
+            "模型", "Accuracy", "Precision", "Recall", "F1", "AUC", "检测时间(ms)"
+        ))
+        print("-" * 90)
+        model_name6='Temporal-Only'
+        metrics6 = results[model_name6]
+        print("{:<25} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f} | {:<8.4f}".format(
+            model_name6,
+            metrics6['accuracy'],
+            metrics6['precision'],
+            metrics6['recall'],
+            metrics6['f1'],
+            metrics6['auc'],
+            metrics6['detection_time'] * 1000  # 转换为毫秒
+        ))
 
         # 3. 结果展示
         print("\n=== 模型性能综合对比表 ===")
@@ -129,60 +219,46 @@ def main():
                 metrics['detection_time'] * 1000  # 转换为毫秒
             ))
 
-        # # 4. 可视化训练历史
-        # plt.figure(figsize=(15, 5))
-        #
-        # # 训练准确率对比
-        # plt.subplot(1, 2, 1)
-        # for model_name, history in histories.items():
-        #     plt.plot(history.history['accuracy'], label=model_name)
-        # plt.title('Model Accuracy Comparison')
-        # plt.xlabel('Epoch')
-        # plt.ylabel('Accuracy')
-        # plt.legend()
-        # plt.grid(True)
-        #
-        # # 训练损失值对比
-        # plt.subplot(1, 2, 2)
-        # for model_name, history in histories.items():
-        #     plt.plot(history.history['loss'], label=model_name)
-        # plt.title('Model Loss Comparison')
-        # plt.xlabel('Epoch')
-        # plt.ylabel('Loss')
-        # plt.legend()
-        # plt.grid(True)
-        #
-        # plt.tight_layout()
-        # plt.savefig('model_comparison_results.png')
-        # plt.close()
-        #
-        # # 5. 性能提升分析
-        # # 5. 性能提升分析
-        # print("\n=== 性能提升分析 ===")
-        # cnn_bilstm_acc = results['CNN-BiLSTM']['accuracy']
-        #
-        # # 计算相对于每个其他模型的提升
-        # other_models = [
-        #     'Spatial-Only',  # 消融实验1
-        #     'Temporal-Only',  # 消融实验2
-        #     'CNN',  # 基准模型1
-        #     'BiLSTM',  # 基准模型2
-        #     'GRU'  # 基准模型3
-        # ]
+        # 4. 可视化训练历史
+        plt.figure(figsize=(15, 5))
 
-        print("CNN-BiLSTM模型相对于其他模型的性能提升：")
-        print("-" * 50)
-        print("{:<15} | {:<10} | {:<10}".format("对比模型", "准确率", "提升百分比"))
-        print("-" * 50)
+        # 训练准确率对比
+        plt.subplot(1, 2, 1)
+        for model_name, history in histories.items():
+            plt.plot(history.history['accuracy'], label=model_name)
+        plt.title('Model Accuracy Comparison')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.grid(True)
 
-        for model_name in other_models:
-            base_acc = results[model_name]['accuracy']
-            improvement = (cnn_bilstm_acc - base_acc) / base_acc * 100
-            print("{:<15} | {:<10.4f} | {:<10.2f}%".format(
-                model_name,
-                base_acc,
-                improvement
-            ))
+        # 训练损失值对比
+        plt.subplot(1, 2, 2)
+        for model_name, history in histories.items():
+            plt.plot(history.history['loss'], label=model_name)
+        plt.title('Model Loss Comparison')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.savefig('model_comparison_results.png')
+        plt.close()
+
+        # 5. 性能提升分析
+        # 5. 性能提升分析
+        print("\n=== 性能提升分析 ===")
+        cnn_bilstm_acc = results['CNN-BiLSTM']['accuracy']
+
+        # 计算相对于每个其他模型的提升
+        other_models = [
+            'Spatial-Only',  # 消融实验1
+            'Temporal-Only',  # 消融实验2
+            'CNN',  # 基准模型1
+            'BiLSTM',  # 基准模型2
+            'GRU'  # 基准模型3
+        ]
 
     except Exception as e:
         import traceback

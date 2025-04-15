@@ -1,13 +1,13 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from .model import SENet, MultiHeadSelfAttention  # 引入新的注意力机制
+from .model import SENet, MultiHeadSelfAttention
 
 
-class SpatialOnly(Model):
+class SpatialOnlyModel(Model):
     """仅保留空间特征的模型（CNN + SENet）"""
 
     def __init__(self, config=None):
-        super(SpatialOnly, self).__init__()
+        super(SpatialOnlyModel, self).__init__()
 
         # 使用默认配置或传入的配置
         self.config = {
@@ -84,12 +84,34 @@ class SpatialOnly(Model):
         # 分类
         return self.classifier(global_features)
 
+    def build_custom_loss(self):
+        def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
+            pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+            pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
 
-class TemporalOnly(Model):
+            pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
+            pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
+
+            return -tf.reduce_mean(
+                alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
+                (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
+            )
+
+        def temporal_smoothness(y_true, y_pred):
+            delta = tf.abs(y_pred[1:] - y_pred[:-1])
+            return 0.005 * tf.reduce_mean(delta)
+
+        def total_loss(y_true, y_pred):
+            return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
+
+        return total_loss
+
+
+class TemporalOnlyModel(Model):
     """仅保留时间特征的模型（BiLSTM + Transformer自注意力）"""
 
     def __init__(self, config=None):
-        super(TemporalOnly, self).__init__()
+        super(TemporalOnlyModel, self).__init__()
 
         # 使用默认配置或传入的配置
         self.config = {
@@ -155,3 +177,24 @@ class TemporalOnly(Model):
         # 分类
         return self.classifier(global_features)
 
+    def build_custom_loss(self):
+        def focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
+            pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+            pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+
+            pt_1 = tf.clip_by_value(pt_1, 1e-9, 1.0)
+            pt_0 = tf.clip_by_value(pt_0, 1e-9, 1.0)
+
+            return -tf.reduce_mean(
+                alpha * tf.pow(1. - pt_1, gamma) * tf.math.log(pt_1) +
+                (1 - alpha) * tf.pow(pt_0, gamma) * tf.math.log(1. - pt_0)
+            )
+
+        def temporal_smoothness(y_true, y_pred):
+            delta = tf.abs(y_pred[1:] - y_pred[:-1])
+            return 0.005 * tf.reduce_mean(delta)
+
+        def total_loss(y_true, y_pred):
+            return focal_loss(y_true, y_pred) + temporal_smoothness(y_true, y_pred)
+
+        return total_loss
