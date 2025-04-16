@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from .model import SENet, MultiHeadSelfAttention
+from .model import TemporalAttention,SpatialAttention
 
 
 class SpatialOnlyModel(Model):
@@ -11,11 +11,13 @@ class SpatialOnlyModel(Model):
 
         # 使用默认配置或传入的配置
         self.config = {
-            'cnn_filters': 64,
+            'cnn_filters': 64,  # 'cnn_filters': n/2
             'cnn_kernel_sizes': [5, 7, 9],
+            'bilstm_units': [128, 64],  # [第一层units, 第二层units]
             'dropout_rate': 0.2,
-            'spatial_attention_ratio': 16,  # SE模块的压缩比
-            'dense_units': [256, 128],
+            'recurrent_dropout': 0.2,
+            'spatial_attention_kernel': 9,  # 与最大匹配
+            'dense_units': [256, 128],  # 'dense_units': [n*2, n],
             'l2_reg': 0.001,
             'classifier_dropout': 0.3
         }
@@ -46,8 +48,9 @@ class SpatialOnlyModel(Model):
             padding='same'
         )
 
-        # SENet空间注意力
-        self.spatial_attention = SENet(reduction_ratio=self.config['spatial_attention_ratio'])
+        # 空间注意力
+        self.temporal_attention = TemporalAttention(self.config['bilstm_units'][0] * 2)
+
 
         # 分类头
         self.classifier = self._build_classifier()
@@ -115,11 +118,13 @@ class TemporalOnlyModel(Model):
 
         # 使用默认配置或传入的配置
         self.config = {
-            'bilstm_units': [128, 64],
+            'cnn_filters': 64,  # 'cnn_filters': n/2
+            'cnn_kernel_sizes': [5, 7, 9],
+            'bilstm_units': [128, 64],  # [第一层units, 第二层units]
             'dropout_rate': 0.2,
             'recurrent_dropout': 0.2,
-            'temporal_attention_heads': 8,  # Transformer的头数
-            'dense_units': [256, 128],
+            'spatial_attention_kernel': 9,  # 与最大匹配
+            'dense_units': [256, 128],  # 'dense_units': [n*2, n],
             'l2_reg': 0.001,
             'classifier_dropout': 0.3
         }
@@ -140,10 +145,9 @@ class TemporalOnlyModel(Model):
                 layers.BatchNormalization()
             ])
 
-        # Transformer自注意力
-        self.temporal_attention = MultiHeadSelfAttention(
-            d_model=self.config['bilstm_units'][0] * 2,
-            num_heads=self.config['temporal_attention_heads']
+        # 空间注意力
+        self.spatial_attention = SpatialAttention(
+            kernel_size=self.config['spatial_attention_kernel']
         )
 
         # 分类头

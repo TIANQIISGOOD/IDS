@@ -5,7 +5,7 @@ from configs.params import config
 def BiLSTM():
     model = tf.keras.Sequential([
         layers.Reshape((config.FEATURE_DIM, 1), input_shape=(config.FEATURE_DIM,)),
-        layers.Bidirectional(layers.LSTM(64)),
+        layers.Bidirectional(layers.LSTM(128)),
         layers.Dense(1, activation='sigmoid')
     ], name="BiLSTM")
     model.compile(
