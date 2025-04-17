@@ -4,13 +4,32 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="4">
-      <change afterPath="$PROJECT_DIR$/data/gas_final.csv" afterDir="false" />
+    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="4/16">
+      <change afterPath="$PROJECT_DIR$/test/configs/params.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/data/gas_final.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/ablation_models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/bilstm.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/cnn.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/data_loader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/evaluator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/gas_final.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/gru.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/params.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src1/trainer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/OPCUA_dataset_public.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/ablation_models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/bilstm.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/cnn.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/data_loader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/evaluator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/gru.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/params.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/src2/trainer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ablation_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ablation_models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bilstm.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/bilstm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/evaluator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/evaluator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -69,22 +88,30 @@
     "Python.ablation_models.executor": "Run",
     "Python.main.executor": "Run",
     "Python.model.executor": "Run",
+    "Python.preprocess.executor": "Run",
+    "Python.test.executor": "Run",
     "Python.trainer.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "D:/桌面/论文/IDS/data",
+    "last_opened_file_path": "D:/桌面/论文/IDS/src1",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="D:\桌面\论文\IDS\data" />
-      <recent name="D:\桌面\论文\IDS\src\rf" />
-      <recent name="D:\桌面\论文\IDS\src\bilstm" />
+      <recent name="D:\桌面\论文\IDS\src1" />
+      <recent name="D:\桌面\论文\IDS\src" />
+      <recent name="D:\桌面\论文\IDS\test\src1" />
+      <recent name="D:\桌面\论文\IDS\configs" />
+      <recent name="D:\桌面\论文\IDS\test\data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\桌面\论文\IDS\test" />
+      <recent name="D:\桌面\论文\IDS" />
+      <recent name="D:\桌面\论文\IDS\data" />
+      <recent name="D:\桌面\论文\IDS\src\test_1" />
+      <recent name="D:\桌面\论文\IDS\src" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -151,8 +178,27 @@
       <option name="project" value="LOCAL" />
       <updated>1744683463335</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="4/16">
+      <option name="closed" value="true" />
+      <created>1744782742857</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1744782742857</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="test" />
@@ -160,7 +206,8 @@
     <MESSAGE value="2" />
     <MESSAGE value="3" />
     <MESSAGE value="4" />
-    <option name="LAST_COMMIT_MESSAGE" value="4" />
+    <MESSAGE value="4/16" />
+    <option name="LAST_COMMIT_MESSAGE" value="4/16" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -169,6 +216,10 @@
           <url>file://$PROJECT_DIR$/src/ablation_models.py</url>
           <line>57</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test/src1/trainer.py</url>
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

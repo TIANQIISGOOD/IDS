@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from configs.params import config
+
 
 
 class TemporalAttention(layers.Layer):
