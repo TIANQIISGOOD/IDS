@@ -49,7 +49,9 @@ class SpatialOnlyModel(Model):
         )
 
         # 空间注意力
-        self.temporal_attention = TemporalAttention(self.config['bilstm_units'][0] * 2)
+        self.spatial_attention = SpatialAttention(
+            kernel_size=self.config['spatial_attention_kernel']
+        )
 
 
         # 分类头
@@ -78,7 +80,7 @@ class SpatialOnlyModel(Model):
         fused_features = self.feature_fusion(conv_features)
         fused_features = self.fusion_conv(fused_features)
 
-        # SENet空间注意力
+        # 空间注意力
         spatial_context = self.spatial_attention(fused_features)
 
         # 全局池化
@@ -145,10 +147,8 @@ class TemporalOnlyModel(Model):
                 layers.BatchNormalization()
             ])
 
-        # 空间注意力
-        self.spatial_attention = SpatialAttention(
-            kernel_size=self.config['spatial_attention_kernel']
-        )
+        # 时间注意力
+        self.temporal_attention = TemporalAttention(self.config['bilstm_units'][0] * 2)
 
         # 分类头
         self.classifier = self._build_classifier()
@@ -172,7 +172,7 @@ class TemporalOnlyModel(Model):
         for layer in self.bilstm_layers:
             lstm_features = layer(lstm_features)
 
-        # Transformer自注意力
+        # 时间自注意力
         temporal_context = self.temporal_attention(lstm_features)
 
         # 全局池化

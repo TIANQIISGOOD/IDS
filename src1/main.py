@@ -76,28 +76,28 @@ if __name__ == "__main__":
     print(f"Test data shape: {X_test_dl.shape}")
     print(f"Training labels shape: {y_train.shape}")
     try:
-        # 模型训练和评估
-        # print("\nTraining CNN-BiLSTM model...")
-        # model_cnn_bilstm = BiLSTM_CNN()
-        # trainer = ModelTrainer(model_cnn_bilstm)
-        # history_cnn_bilstm = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        # results['BiLSTM-CNN'] = evaluator.evaluate(model_cnn_bilstm, X_test_dl, y_test)
-        # results['BiLSTM-CNN']['detection_time'] = measure_detection_time(model_cnn_bilstm, X_test_dl)
-        #
-        # print("\nTraining CNN model...")
-        # cnn_model, history_cnn = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
-        # results['CNN'] = evaluator.evaluate(cnn_model, X_test_dl, y_test)
-        # results['CNN']['detection_time'] = measure_detection_time(cnn_model, X_test_dl)
-        #
-        # print("\nTraining BiLSTM model...")
-        # bilstm_model, history_bilstm = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
-        # results['BiLSTM'] = evaluator.evaluate(bilstm_model, X_test_dl, y_test)
-        # results['BiLSTM']['detection_time'] = measure_detection_time(bilstm_model, X_test_dl)
-        #
-        # print("\nTraining GRU model...")
-        # gru_model, history_gru = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
-        # results['GRU'] = evaluator.evaluate(gru_model, X_test_dl, y_test)
-        # results['GRU']['detection_time'] = measure_detection_time(gru_model, X_test_dl)
+        #模型训练和评估
+        print("\nTraining CNN-BiLSTM model...")
+        model_cnn_bilstm = BiLSTM_CNN()
+        trainer = ModelTrainer(model_cnn_bilstm)
+        history_cnn_bilstm = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        results['BiLSTM-CNN'] = evaluator.evaluate(model_cnn_bilstm, X_test_dl, y_test)
+        results['BiLSTM-CNN']['detection_time'] = measure_detection_time(model_cnn_bilstm, X_test_dl)
+
+        print("\nTraining CNN model...")
+        cnn_model, history_cnn = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
+        results['CNN'] = evaluator.evaluate(cnn_model, X_test_dl, y_test)
+        results['CNN']['detection_time'] = measure_detection_time(cnn_model, X_test_dl)
+
+        print("\nTraining BiLSTM model...")
+        bilstm_model, history_bilstm = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
+        results['BiLSTM'] = evaluator.evaluate(bilstm_model, X_test_dl, y_test)
+        results['BiLSTM']['detection_time'] = measure_detection_time(bilstm_model, X_test_dl)
+
+        print("\nTraining GRU model...")
+        gru_model, history_gru = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+        results['GRU'] = evaluator.evaluate(gru_model, X_test_dl, y_test)
+        results['GRU']['detection_time'] = measure_detection_time(gru_model, X_test_dl)
 
         # 训练空间特征模型
         print("\nTraining Spatial-Only model...")
