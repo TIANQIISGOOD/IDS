@@ -3,6 +3,7 @@ from data_loader import DataLoader
 from gru import train_improved_gru
 from model import BiLSTM_CNN
 from trainer import ModelTrainer
+from trainer0 import ModelTrainer0
 from evaluator import ModelEvaluator
 from bilstm import BiLSTM, train_bilstm
 from cnn import CNN, train_cnn
@@ -102,7 +103,7 @@ if __name__ == "__main__":
         # 训练空间特征模型
         print("\nTraining Spatial-Only model...")
         spatial_model = SpatialOnlyModel()
-        spatial_trainer = ModelTrainer(spatial_model)
+        spatial_trainer = ModelTrainer0(spatial_model)
         history_spatial = spatial_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
         results['Spatial-Only'] = evaluator.evaluate(spatial_model, X_test_dl, y_test)
         results['Spatial-Only']['detection_time'] = measure_detection_time(spatial_model, X_test_dl)
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         # 训练时间特征模型
         print("\nTraining Temporal-Only model...")
         temporal_model = TemporalOnlyModel()
-        temporal_trainer = ModelTrainer(temporal_model)
+        temporal_trainer = ModelTrainer0(temporal_model)
         history_temporal = temporal_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
         results['Temporal-Only'] = evaluator.evaluate(temporal_model, X_test_dl, y_test)
         results['Temporal-Only']['detection_time'] = measure_detection_time(temporal_model, X_test_dl)
