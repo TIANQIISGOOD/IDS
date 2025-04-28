@@ -12,9 +12,19 @@ from ablation_models import SpatialOnlyModel, TemporalOnlyModel
 from params import config
 from sklearn.model_selection import train_test_split
 
+
+def save_model_weights(model, name):
+    """保存模型权重和结构"""
+    # 保存模型权重
+    model.save_weights(f'saved_models/{name}_weights.h5')
+    # 保存模型配置
+    model_config = model.get_config()
+    with open(f'saved_models/{name}_config.pkl', 'wb') as f:
+        pickle.dump(model_config, f)
+
+
 if __name__ == "__main__":
-    # 记录执行信息
-    current_time = "2025-04-28 03:18:50"
+    current_time = "2025-04-28 03:29:09"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -66,9 +76,9 @@ if __name__ == "__main__":
                 trainer = ModelTrainer(model)
                 history = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
 
-            # 保存模型
+            # 保存模型权重和配置
             print(f"Saving {name} model...")
-            model.save(f'saved_models/{name}.h5')
+            save_model_weights(model, name)
 
             # 保存训练历史
             with open(f'saved_models/{name}_history.pkl', 'wb') as f:
