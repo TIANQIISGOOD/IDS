@@ -15,6 +15,19 @@ import numpy as np
 from tensorflow.keras.utils import to_categorical
 
 
+def get_user_input():
+    """持续等待用户输入，直到得到有效的响应"""
+    while True:
+        try:
+            response = input("\nWould you like to evaluate the models on the test set? (yes/no): ").lower().strip()
+            if response in ['yes', 'no']:
+                return response
+            print("Please enter 'yes' or 'no'")
+        except KeyboardInterrupt:
+            print("\nInput interrupted. Please try again (yes/no): ")
+            continue
+
+
 def measure_detection_time(model, X_test):
     start_time = time.time()
     _ = model.predict(X_test)
@@ -37,35 +50,43 @@ def print_model_results(name, metrics):
 def train_models(X_train_dl, y_train, X_val_dl, y_val):
     trained_models = {}
 
-    print("\nTraining CNN-BiLSTM model...")
-    model_cnn_bilstm = BiLSTM_CNN()
-    trainer = ModelTrainer(model_cnn_bilstm)
-    history_cnn_bilstm = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['BiLSTM-CNN'] = model_cnn_bilstm
+    try:
+        print("\nTraining CNN-BiLSTM model...")
+        model_cnn_bilstm = BiLSTM_CNN()
+        trainer = ModelTrainer(model_cnn_bilstm)
+        history_cnn_bilstm = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['BiLSTM-CNN'] = model_cnn_bilstm
 
-    print("\nTraining CNN model...")
-    cnn_model, history_cnn = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['CNN'] = cnn_model
+        print("\nTraining CNN model...")
+        cnn_model, history_cnn = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['CNN'] = cnn_model
 
-    print("\nTraining BiLSTM model...")
-    bilstm_model, history_bilstm = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['BiLSTM'] = bilstm_model
+        print("\nTraining BiLSTM model...")
+        bilstm_model, history_bilstm = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['BiLSTM'] = bilstm_model
 
-    print("\nTraining GRU model...")
-    gru_model, history_gru = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['GRU'] = gru_model
+        print("\nTraining GRU model...")
+        gru_model, history_gru = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['GRU'] = gru_model
 
-    print("\nTraining Spatial-Only model...")
-    spatial_model = SpatialOnlyModel()
-    spatial_trainer = ModelTrainer(spatial_model)
-    history_spatial = spatial_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['Spatial-Only'] = spatial_model
+        print("\nTraining Spatial-Only model...")
+        spatial_model = SpatialOnlyModel()
+        spatial_trainer = ModelTrainer(spatial_model)
+        history_spatial = spatial_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['Spatial-Only'] = spatial_model
 
-    print("\nTraining Temporal-Only model...")
-    temporal_model = TemporalOnlyModel()
-    temporal_trainer = ModelTrainer(temporal_model)
-    history_temporal = temporal_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-    trained_models['Temporal-Only'] = temporal_model
+        print("\nTraining Temporal-Only model...")
+        temporal_model = TemporalOnlyModel()
+        temporal_trainer = ModelTrainer(temporal_model)
+        history_temporal = temporal_trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        trained_models['Temporal-Only'] = temporal_model
+
+    except KeyboardInterrupt:
+        print("\nTraining process interrupted by user.")
+        raise
+    except Exception as e:
+        print(f"\nError during training: {str(e)}")
+        raise
 
     return trained_models
 
@@ -73,12 +94,19 @@ def train_models(X_train_dl, y_train, X_val_dl, y_val):
 def evaluate_models(models, X_test_dl, y_test, evaluator):
     results = {}
     for name, model in models.items():
-        results[name] = evaluator.evaluate(model, X_test_dl, y_test)
-        results[name]['detection_time'] = measure_detection_time(model, X_test_dl)
+        try:
+            results[name] = evaluator.evaluate(model, X_test_dl, y_test)
+            results[name]['detection_time'] = measure_detection_time(model, X_test_dl)
+        except Exception as e:
+            print(f"\nError evaluating {name}: {str(e)}")
     return results
 
 
 def print_comparison_table(results):
+    if not results:
+        print("\nNo results to display.")
+        return
+
     print("\n=== Model Performance Comparison ===")
     print("{:<15} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8} | {:<8}".format(
         "Model", "Accuracy", "F1", "FPR", "FNR", "AUC", "Time(s)"))
@@ -96,8 +124,7 @@ def print_comparison_table(results):
 
 
 if __name__ == "__main__":
-    # 记录执行信息
-    current_time = "2025-04-16 14:22:38"
+    current_time = "2025-04-28 04:01:32"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -129,12 +156,8 @@ if __name__ == "__main__":
         trained_models = train_models(X_train_dl, y_train, X_val_dl, y_val)
         print("\nAll models have been trained successfully!")
 
-        # 询问是否进行测试集评估
-        while True:
-            response = input("\nWould you like to evaluate the models on the test set? (yes/no): ").lower()
-            if response in ['yes', 'no']:
-                break
-            print("Please enter 'yes' or 'no'")
+        # 持续等待用户输入，直到得到有效响应
+        response = get_user_input()
 
         if response == 'yes':
             # 初始化评估器
@@ -151,13 +174,20 @@ if __name__ == "__main__":
 
             # 打印比较表
             print_comparison_table(results)
+        else:
+            print("\nEvaluation skipped as per user request.")
 
         # 添加执行信息到结果底部
         print("\n" + "=" * 50)
         print(f"Results generated at: {current_time} UTC")
         print(f"Generated by: {current_user}")
 
+    except KeyboardInterrupt:
+        print(f"\n\nProgram interrupted by user at: {current_time} UTC")
+        print(f"User: {current_user}")
     except Exception as e:
-        print(f"训练或评估过程中发生错误: {str(e)}")
+        print(f"\n训练或评估过程中发生错误: {str(e)}")
         print(f"Error occurred at: {current_time} UTC")
         print(f"User: {current_user}")
+    finally:
+        print("\nProgram completed.")
