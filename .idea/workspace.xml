@@ -4,25 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="4/25/2">
-      <change afterPath="$PROJECT_DIR$/src1/dome.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/OPCUA_dataset_public.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/ablation_models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/bilstm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/cnn.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/data_loader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/evaluate_models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/evaluator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/gru.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/params.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/train_and_save.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src2/trainer.py" afterDir="false" />
+    <list default="true" id="6db17573-cbba-44e6-b367-e573a7f7581e" name="更改" comment="4/28/1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src1/data_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/src1/data_loader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src1/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src1/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src1/params.py" beforeDir="false" afterPath="$PROJECT_DIR$/src1/params.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src2/train_and_save.py" beforeDir="false" afterPath="$PROJECT_DIR$/src2/train_and_save.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +223,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745546809210</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="4/28/1">
+      <option name="closed" value="true" />
+      <created>1745803954095</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1745803954095</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -263,7 +255,8 @@
     <MESSAGE value="4/16/1" />
     <MESSAGE value="4/25/1" />
     <MESSAGE value="4/25/2" />
-    <option name="LAST_COMMIT_MESSAGE" value="4/25/2" />
+    <MESSAGE value="4/28/1" />
+    <option name="LAST_COMMIT_MESSAGE" value="4/28/1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

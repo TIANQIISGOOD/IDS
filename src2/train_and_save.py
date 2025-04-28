@@ -1,8 +1,3 @@
-import os
-import numpy as np
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-import time
 from data_loader import DataLoader
 from gru import train_improved_gru
 from model import BiLSTM_CNN
@@ -12,38 +7,44 @@ from bilstm import BiLSTM, train_bilstm
 from cnn import CNN, train_cnn
 from ablation_models import SpatialOnlyModel, TemporalOnlyModel
 from params import config
+import time
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+import numpy as np
+import os
 
-# 获取当前脚本所在目录
-current_dir = os.path.dirname(os.path.abspath(__file__))
+
+def create_directories():
+    """创建必要的目录"""
+    directories = ['saved_models', 'saved_data']
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Created directory: {directory}")
 
 
-# 创建保存目录的函数
-def ensure_dir(dir_path):
-    """确保目录存在，如果不存在则创建"""
-    if not os.path.exists(dir_path):
-        try:
-            os.makedirs(dir_path)
-            print(f"Created directory: {dir_path}")
-        except Exception as e:
-            print(f"Error creating directory {dir_path}: {e}")
-            raise
+class CustomModelWrapper:
+    """包装Sequential模型，添加build_custom_loss方法"""
+
+    def __init__(self, model):
+        self.model = model
+
+    def build_custom_loss(self):
+        return 'categorical_crossentropy'
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
 
 
 if __name__ == "__main__":
-    # 记录执行信息
-    current_time = "2025-04-28 01:09:22"
+    current_time = "2025-04-28 02:14:05"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
     print("=" * 50)
 
-    # 创建保存目录
-    saved_data_dir = os.path.join(current_dir, 'saved_data')
-    saved_models_dir = os.path.join(current_dir, 'saved_models')
-
-    print("\nCreating necessary directories...")
-    ensure_dir(saved_data_dir)
-    ensure_dir(saved_models_dir)
+    # 创建必要的目录
+    create_directories()
 
     # 数据加载
     print("\nLoading and preprocessing data...")
@@ -63,41 +64,64 @@ if __name__ == "__main__":
 
     # 保存验证集和测试集数据
     print("\nSaving validation and test sets...")
-    try:
-        # 使用完整路径保存数据
-        np.save(os.path.join(saved_data_dir, 'X_val.npy'), X_val_dl)
-        np.save(os.path.join(saved_data_dir, 'y_val.npy'), y_val)
-        np.save(os.path.join(saved_data_dir, 'X_test.npy'), X_test_dl)
-        np.save(os.path.join(saved_data_dir, 'y_test.npy'), y_test)
-        print("Data saved successfully!")
-    except Exception as e:
-        print(f"Error saving data: {e}")
-        raise
+    np.save('saved_data/X_val.npy', X_val_dl)
+    np.save('saved_data/y_val.npy', y_val)
+    np.save('saved_data/X_test.npy', X_test_dl)
+    np.save('saved_data/y_test.npy', y_test)
+    print("Data saved successfully!")
 
     try:
         # 训练并保存所有模型
         print("\nTraining and saving models...")
-        models_to_train = {
-            'BiLSTM-CNN': BiLSTM_CNN(),
-            'CNN': CNN(),
-            'BiLSTM': BiLSTM(),
-            'GRU': lambda: train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)[0],
-            'Spatial-Only': SpatialOnlyModel(),
-            'Temporal-Only': TemporalOnlyModel()
-        }
 
-        for model_name, model in models_to_train.items():
-            print(f"\nTraining {model_name} model...")
-            if model_name == 'GRU':
-                model = model()  # GRU使用其特定的训练函数
-            else:
-                trainer = ModelTrainer(model)
-                trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        # BiLSTM-CNN (使用原始模型，因为它已经有build_custom_loss方法)
+        print("\nTraining BiLSTM-CNN model...")
+        model_cnn_bilstm = BiLSTM_CNN()
+        trainer = ModelTrainer(model_cnn_bilstm)
+        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        model_cnn_bilstm.save('saved_models/BiLSTM-CNN.h5')
+        print("BiLSTM-CNN model saved successfully!")
 
-            # 使用完整路径保存模型
-            model_path = os.path.join(saved_models_dir, f'{model_name}.h5')
-            model.save(model_path)
-            print(f"{model_name} model saved successfully!")
+        # CNN
+        print("\nTraining CNN model...")
+        cnn_model = CNN()
+        cnn_model = CustomModelWrapper(cnn_model)  # 包装模型
+        trainer = ModelTrainer(cnn_model)
+        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        cnn_model.model.save('saved_models/CNN.h5')
+        print("CNN model saved successfully!")
+
+        # BiLSTM
+        print("\nTraining BiLSTM model...")
+        bilstm_model = BiLSTM()
+        bilstm_model = CustomModelWrapper(bilstm_model)  # 包装模型
+        trainer = ModelTrainer(bilstm_model)
+        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        bilstm_model.model.save('saved_models/BiLSTM.h5')
+        print("BiLSTM model saved successfully!")
+
+        # GRU
+        print("\nTraining GRU model...")
+        gru_model, _ = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+        gru_model.save('saved_models/GRU.h5')
+        print("GRU model saved successfully!")
+
+        # 消融模型（它们已经有build_custom_loss方法）
+        # Spatial-Only
+        print("\nTraining Spatial-Only model...")
+        spatial_model = SpatialOnlyModel()
+        trainer = ModelTrainer(spatial_model)
+        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        spatial_model.save('saved_models/Spatial-Only.h5')
+        print("Spatial-Only model saved successfully!")
+
+        # Temporal-Only
+        print("\nTraining Temporal-Only model...")
+        temporal_model = TemporalOnlyModel()
+        trainer = ModelTrainer(temporal_model)
+        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+        temporal_model.save('saved_models/Temporal-Only.h5')
+        print("Temporal-Only model saved successfully!")
 
         print("\nAll models trained and saved successfully!")
         print(f"Results generated at: {current_time} UTC")
