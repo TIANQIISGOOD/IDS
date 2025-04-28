@@ -2,16 +2,8 @@ import tensorflow as tf
 import numpy as np
 import time
 from evaluator import ModelEvaluator
-from model import BiLSTM_CNN, TemporalAttention, SpatialAttention  # 导入自定义模型和层
-from data_loader import DataLoader
-from gru import train_improved_gru
-from model import BiLSTM_CNN
-from trainer import ModelTrainer
-from evaluator import ModelEvaluator
-from bilstm import BiLSTM, train_bilstm
-from cnn import CNN, train_cnn
+from model import BiLSTM_CNN, TemporalAttention, SpatialAttention
 from ablation_models import SpatialOnlyModel, TemporalOnlyModel
-from tensorflow.keras.models import load_model
 
 
 def measure_detection_time(model, X_test):
@@ -34,23 +26,21 @@ def print_model_results(name, metrics):
     print(metrics['confusion_matrix'])
 
 
-def load_custom_model(model_path, model_type):
+def load_custom_model(model_path):
     """加载自定义模型"""
     custom_objects = {
         'BiLSTM_CNN': BiLSTM_CNN,
-        'SpatialOnlyModel': SpatialOnlyModel,
-        'TemporalOnlyModel': TemporalOnlyModel,
         'TemporalAttention': TemporalAttention,
-        'SpatialAttention': SpatialAttention
+        'SpatialAttention': SpatialAttention,
+        'SpatialOnlyModel': SpatialOnlyModel,
+        'TemporalOnlyModel': TemporalOnlyModel
     }
 
     with tf.keras.utils.custom_object_scope(custom_objects):
-        model = load_model(model_path)
-    return model
-
+        return tf.keras.models.load_model(model_path)
 
 if __name__ == "__main__":
-    current_time = "2025-04-28 02:33:08"
+    current_time = "2025-04-28 02:44:59"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -83,18 +73,23 @@ if __name__ == "__main__":
         for model_name, config in model_configs.items():
             print(f"\nEvaluating {model_name} model...")
 
-            # 根据模型类型选择加载方式
-            if config['custom']:
-                model = load_custom_model(f'saved_models/{model_name}.h5', model_name)
-            else:
-                model = tf.keras.models.load_model(f'saved_models/{model_name}.h5')
+            try:
+                # 根据模型类型选择加载方式
+                if config['custom']:
+                    model = load_custom_model(f'saved_models/{model_name}')
+                else:
+                    model = tf.keras.models.load_model(f'saved_models/{model_name}')
 
-            # 在测试集上评估
-            results[model_name] = evaluator.evaluate(model, X_test, y_test)
-            results[model_name]['detection_time'] = measure_detection_time(model, X_test)
+                # 在测试集上评估
+                results[model_name] = evaluator.evaluate(model, X_test, y_test)
+                results[model_name]['detection_time'] = measure_detection_time(model, X_test)
 
-            # 打印结果
-            print_model_results(model_name, results[model_name])
+                # 打印结果
+                print_model_results(model_name, results[model_name])
+
+            except Exception as e:
+                print(f"Error evaluating {model_name}: {str(e)}")
+                continue
 
         # 打印性能对比表
         print("\n=== Model Performance Comparison ===")
@@ -120,6 +115,6 @@ if __name__ == "__main__":
         print(f"评估过程中发生错误: {str(e)}")
         import traceback
 
-        print(traceback.format_exc())  # 打印完整的错误堆栈
+        print(traceback.format_exc())
         print(f"Error occurred at: {current_time} UTC")
         print(f"User: {current_user}")

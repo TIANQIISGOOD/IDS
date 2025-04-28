@@ -1,17 +1,17 @@
+import tensorflow as tf
+import numpy as np
+import os
+import time
 from data_loader import DataLoader
-from gru import train_improved_gru
-from model import BiLSTM_CNN
+from model import BiLSTM_CNN, TemporalAttention, SpatialAttention
 from trainer import ModelTrainer
 from evaluator import ModelEvaluator
 from bilstm import BiLSTM, train_bilstm
 from cnn import CNN, train_cnn
+from gru import train_improved_gru
 from ablation_models import SpatialOnlyModel, TemporalOnlyModel
-from params import config
-import time
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
-import numpy as np
-import os
+from configs.params import config
 
 
 def create_directories():
@@ -21,6 +21,21 @@ def create_directories():
         if not os.path.exists(directory):
             os.makedirs(directory)
             print(f"Created directory: {directory}")
+
+
+def save_custom_model(model, path):
+    """保存自定义模型"""
+    custom_objects = {
+        'BiLSTM_CNN': BiLSTM_CNN,
+        'TemporalAttention': TemporalAttention,
+        'SpatialAttention': SpatialAttention,
+        'SpatialOnlyModel': SpatialOnlyModel,
+        'TemporalOnlyModel': TemporalOnlyModel
+    }
+
+    with tf.keras.utils.custom_object_scope(custom_objects):
+        # 使用SavedModel格式保存
+        model.save(path, save_format='tf')
 
 
 class CustomModelWrapper:
@@ -37,7 +52,8 @@ class CustomModelWrapper:
 
 
 if __name__ == "__main__":
-    current_time = "2025-04-28 02:14:05"
+    # 记录执行信息
+    current_time = "2025-04-28 02:44:59"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -71,48 +87,44 @@ if __name__ == "__main__":
     print("Data saved successfully!")
 
     try:
-        # 训练并保存所有模型
-        print("\nTraining and saving models...")
-
-        # BiLSTM-CNN (使用原始模型，因为它已经有build_custom_loss方法)
+        # BiLSTM-CNN
         print("\nTraining BiLSTM-CNN model...")
         model_cnn_bilstm = BiLSTM_CNN()
         trainer = ModelTrainer(model_cnn_bilstm)
         trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        model_cnn_bilstm.save('saved_models/BiLSTM-CNN.h5')
+        save_custom_model(model_cnn_bilstm, 'saved_models/BiLSTM-CNN')
         print("BiLSTM-CNN model saved successfully!")
 
         # CNN
         print("\nTraining CNN model...")
         cnn_model = CNN()
-        cnn_model = CustomModelWrapper(cnn_model)  # 包装模型
-        trainer = ModelTrainer(cnn_model)
+        cnn_wrapper = CustomModelWrapper(cnn_model)
+        trainer = ModelTrainer(cnn_wrapper)
         trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        cnn_model.model.save('saved_models/CNN.h5')
+        cnn_model.save('saved_models/CNN')
         print("CNN model saved successfully!")
 
         # BiLSTM
         print("\nTraining BiLSTM model...")
         bilstm_model = BiLSTM()
-        bilstm_model = CustomModelWrapper(bilstm_model)  # 包装模型
-        trainer = ModelTrainer(bilstm_model)
+        bilstm_wrapper = CustomModelWrapper(bilstm_model)
+        trainer = ModelTrainer(bilstm_wrapper)
         trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        bilstm_model.model.save('saved_models/BiLSTM.h5')
+        bilstm_model.save('saved_models/BiLSTM')
         print("BiLSTM model saved successfully!")
 
         # GRU
         print("\nTraining GRU model...")
         gru_model, _ = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
-        gru_model.save('saved_models/GRU.h5')
+        gru_model.save('saved_models/GRU')
         print("GRU model saved successfully!")
 
-        # 消融模型（它们已经有build_custom_loss方法）
         # Spatial-Only
         print("\nTraining Spatial-Only model...")
         spatial_model = SpatialOnlyModel()
         trainer = ModelTrainer(spatial_model)
         trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        spatial_model.save('saved_models/Spatial-Only.h5')
+        save_custom_model(spatial_model, 'saved_models/Spatial-Only')
         print("Spatial-Only model saved successfully!")
 
         # Temporal-Only
@@ -120,7 +132,7 @@ if __name__ == "__main__":
         temporal_model = TemporalOnlyModel()
         trainer = ModelTrainer(temporal_model)
         trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        temporal_model.save('saved_models/Temporal-Only.h5')
+        save_custom_model(temporal_model, 'saved_models/Temporal-Only')
         print("Temporal-Only model saved successfully!")
 
         print("\nAll models trained and saved successfully!")
@@ -129,5 +141,8 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"训练或保存过程中发生错误: {str(e)}")
+        import traceback
+
+        print(traceback.format_exc())
         print(f"Error occurred at: {current_time} UTC")
         print(f"User: {current_user}")
