@@ -2,7 +2,7 @@ class Config:
     # 数据参数
     WINDOW_SIZE = 30  # 时间窗口大小（秒）
     FEATURE_DIM = 26  # 特征维度
-    NUM_CLASSES = 8  # 类别数量
+    NUM_CLASSES = 2  # 类别数量
 
     # 特征列名
     FEATURE_COLUMNS = [
@@ -28,7 +28,7 @@ class Config:
     # 训练参数
     BATCH_SIZE = 128
     INIT_LR = 0.001
-    EPOCHS = 100
+    EPOCHS = 50
 
     # 类别权重（根据数据分布调整）
     CLASS_WEIGHTS = None  # 训练时会根据数据分布自动计算

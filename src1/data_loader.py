@@ -15,7 +15,8 @@ class DataLoader:
 
         # 分离特征和标签
         X = df[config.FEATURE_COLUMNS].values
-        y = df[config.LABEL_COLUMN].values
+        y_0 = df[config.LABEL_COLUMN].values
+        y = np.where(y_0 == 0, 0, 1)  # 生成二进制标签
 
         # 标准化特征
         X = self.scaler.fit_transform(X)

@@ -1,8 +1,9 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from configs.params import config
+from params import config
 
 
+# 空间注意力
 class TemporalAttention(layers.Layer):
     def __init__(self, units):
         super(TemporalAttention, self).__init__()
@@ -15,7 +16,7 @@ class TemporalAttention(layers.Layer):
         context_vector = inputs * attention_weights
         return context_vector
 
-
+# 时间注意力
 class SpatialAttention(layers.Layer):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
@@ -33,18 +34,17 @@ class BiLSTM_CNN(Model):
     def __init__(self, model_config=None):
         super(BiLSTM_CNN, self).__init__()
 
-        # 使用默认配置或传入的配置
         self.config = {
             'cnn_filters': 64,  # 'cnn_filters': n/2
-            'cnn_kernel_sizes': [5, 7, 9],
+            'cnn_kernel_sizes': [3, 5, 7],
             'bilstm_units': [128, 64],  # [第一层units, 第二层units]
             'dropout_rate': 0.2,
             'recurrent_dropout': 0.2,
-            'spatial_attention_kernel': 9,  # 与最大匹配
+            'spatial_attention_kernel': 7,  # 与最大匹配
             'dense_units': [256, 128],  # 'dense_units': [n*2, n]
             'l2_reg': 0.001,
             'classifier_dropout': 0.3,
-            'num_classes': 8  # 更新为8个类别
+            'num_classes': config.NUM_CLASSES  # 2分类
         }
         if model_config:
             self.config.update(model_config)
@@ -106,7 +106,6 @@ class BiLSTM_CNN(Model):
             ))
             classifier.add(layers.BatchNormalization())
             classifier.add(layers.Dropout(self.config['classifier_dropout']))
-        # 更改最后一层为8分类的softmax
         classifier.add(layers.Dense(self.config['num_classes'], activation='softmax'))
         return classifier
 
@@ -120,7 +119,7 @@ class BiLSTM_CNN(Model):
         fused_features = self.feature_fusion(conv_features)
         fused_features = self.fusion_conv(fused_features)
 
-        # 空间注意力 (提前到BiLSTM之前)
+        # 空间注意力
         spatial_context = self.spatial_attention(fused_features)
 
         # BiLSTM处理
@@ -137,6 +136,7 @@ class BiLSTM_CNN(Model):
         # 分类
         return self.classifier(global_features)
 
+    # 损失函数
     def build_custom_loss(self):
         def categorical_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
             epsilon = 1e-7
