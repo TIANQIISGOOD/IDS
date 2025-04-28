@@ -34,7 +34,7 @@ class Config:
     # 保持原训练参数
     BATCH_SIZE = 128
     INIT_LR = 0.001
-    EPOCHS = 1
+    EPOCHS = 20
     CLASS_WEIGHTS = None
 
 config = Config()
