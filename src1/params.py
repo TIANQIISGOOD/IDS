@@ -28,7 +28,7 @@ class Config:
     # 训练参数
     BATCH_SIZE = 128
     INIT_LR = 0.001
-    EPOCHS = 50
+    EPOCHS = 10
 
     # 类别权重（根据数据分布调整）
     CLASS_WEIGHTS = None  # 训练时会根据数据分布自动计算

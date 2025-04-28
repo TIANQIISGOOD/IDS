@@ -6,7 +6,7 @@ from trainer import ModelTrainer
 from evaluator import ModelEvaluator
 from bilstm import BiLSTM, train_bilstm
 from cnn import CNN, train_cnn
-from src.rf import RF, train_rf
+
 from params import config
 import time
 import tensorflow as tf
