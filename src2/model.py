@@ -1,11 +1,53 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from configs.params import config
+from params import config
+
+
+class TemporalAttention(layers.Layer):
+    def __init__(self, units, **kwargs):
+        super(TemporalAttention, self).__init__(**kwargs)
+        self.units = units
+        self.W = layers.Dense(units)
+        self.V = layers.Dense(1)
+
+    def call(self, inputs):
+        score = self.V(tf.nn.tanh(self.W(inputs)))
+        attention_weights = tf.nn.softmax(score, axis=1)
+        context_vector = inputs * attention_weights
+        return context_vector
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "units": self.units
+        })
+        return config
+
+
+class SpatialAttention(layers.Layer):
+    def __init__(self, kernel_size=7, **kwargs):
+        super(SpatialAttention, self).__init__(**kwargs)
+        self.kernel_size = kernel_size
+        self.conv = layers.Conv1D(1, kernel_size=kernel_size, padding='same')
+
+    def call(self, inputs):
+        avg_pool = tf.reduce_mean(inputs, axis=-1, keepdims=True)
+        max_pool = tf.reduce_max(inputs, axis=-1, keepdims=True)
+        concat = tf.concat([avg_pool, max_pool], axis=-1)
+        spatial_map = self.conv(concat)
+        spatial_map = tf.nn.sigmoid(spatial_map)
+        return inputs * spatial_map
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "kernel_size": self.kernel_size
+        })
+        return config
 
 
 class BiLSTM_CNN(Model):
     def __init__(self, config_dict=None, **kwargs):
-        # 先处理Keras的默认参数
         super(BiLSTM_CNN, self).__init__(**kwargs)
 
         # 使用默认配置或传入的配置
@@ -24,10 +66,6 @@ class BiLSTM_CNN(Model):
         if config_dict:
             self.model_config.update(config_dict)
 
-        # 初始化层
-        self._init_layers()
-
-    def _init_layers(self):
         # 多尺度CNN特征提取
         self.multi_scale_convs = []
         for kernel_size in self.model_config['cnn_kernel_sizes']:
@@ -117,18 +155,15 @@ class BiLSTM_CNN(Model):
         return x
 
     def get_config(self):
-        base_config = super().get_config()
-        config = {
+        config = super().get_config()
+        config.update({
             "config_dict": self.model_config
-        }
-        return {**base_config, **config}
+        })
+        return config
 
     @classmethod
     def from_config(cls, config):
-        # 提取自定义配置
-        config_dict = config.pop("config_dict", None)
-        # 创建模型实例
-        return cls(config_dict=config_dict, **config)
+        return cls(config_dict=config.get("config_dict", None))
 
     def build_custom_loss(self):
         def categorical_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):

@@ -1,66 +1,24 @@
-import tensorflow as tf
 import numpy as np
-import os
-import time
+import tensorflow as tf
+import pickle
 from data_loader import DataLoader
-from model import BiLSTM_CNN, TemporalAttention, SpatialAttention
+from gru import train_improved_gru
+from model import BiLSTM_CNN
 from trainer import ModelTrainer
 from evaluator import ModelEvaluator
 from bilstm import BiLSTM, train_bilstm
 from cnn import CNN, train_cnn
-from gru import train_improved_gru
 from ablation_models import SpatialOnlyModel, TemporalOnlyModel
+from params import config
 from sklearn.model_selection import train_test_split
-from configs.params import config
-
-
-def create_directories():
-    """创建必要的目录"""
-    directories = ['saved_models', 'saved_data']
-    for directory in directories:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            print(f"Created directory: {directory}")
-
-
-def save_custom_model(model, path):
-    """保存自定义模型"""
-    custom_objects = {
-        'BiLSTM_CNN': BiLSTM_CNN,
-        'TemporalAttention': TemporalAttention,
-        'SpatialAttention': SpatialAttention,
-        'SpatialOnlyModel': SpatialOnlyModel,
-        'TemporalOnlyModel': TemporalOnlyModel
-    }
-
-    with tf.keras.utils.custom_object_scope(custom_objects):
-        # 使用SavedModel格式保存
-        model.save(path, save_format='tf')
-
-
-class CustomModelWrapper:
-    """包装Sequential模型，添加build_custom_loss方法"""
-
-    def __init__(self, model):
-        self.model = model
-
-    def build_custom_loss(self):
-        return 'categorical_crossentropy'
-
-    def __getattr__(self, name):
-        return getattr(self.model, name)
-
 
 if __name__ == "__main__":
     # 记录执行信息
-    current_time = "2025-04-28 02:44:59"
+    current_time = "2025-04-28 03:18:50"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
     print("=" * 50)
-
-    # 创建必要的目录
-    create_directories()
 
     # 数据加载
     print("\nLoading and preprocessing data...")
@@ -78,71 +36,45 @@ if __name__ == "__main__":
     X_val_dl = X_val.reshape(-1, config.FEATURE_DIM, 1)
     X_test_dl = X_test.reshape(-1, config.FEATURE_DIM, 1)
 
-    # 保存验证集和测试集数据
-    print("\nSaving validation and test sets...")
-    np.save('saved_data/X_val.npy', X_val_dl)
-    np.save('saved_data/y_val.npy', y_val)
-    np.save('saved_data/X_test.npy', X_test_dl)
-    np.save('saved_data/y_test.npy', y_test)
-    print("Data saved successfully!")
+    # 保存测试集数据
+    print("Saving test data...")
+    np.save('saved_models/X_test.npy', X_test_dl)
+    np.save('saved_models/y_test.npy', y_test)
 
     try:
-        # BiLSTM-CNN
-        print("\nTraining BiLSTM-CNN model...")
-        model_cnn_bilstm = BiLSTM_CNN()
-        trainer = ModelTrainer(model_cnn_bilstm)
-        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        save_custom_model(model_cnn_bilstm, 'saved_models/BiLSTM-CNN')
-        print("BiLSTM-CNN model saved successfully!")
+        # 训练和保存模型
+        models = {
+            'BiLSTM-CNN': BiLSTM_CNN(),
+            'CNN': CNN(),
+            'BiLSTM': BiLSTM(),
+            'GRU': None,  # 将在训练时创建
+            'Spatial-Only': SpatialOnlyModel(),
+            'Temporal-Only': TemporalOnlyModel()
+        }
 
-        # CNN
-        print("\nTraining CNN model...")
-        cnn_model = CNN()
-        cnn_wrapper = CustomModelWrapper(cnn_model)
-        trainer = ModelTrainer(cnn_wrapper)
-        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        cnn_model.save('saved_models/CNN')
-        print("CNN model saved successfully!")
+        # 训练和保存每个模型
+        for name, model in models.items():
+            print(f"\nTraining {name} model...")
 
-        # BiLSTM
-        print("\nTraining BiLSTM model...")
-        bilstm_model = BiLSTM()
-        bilstm_wrapper = CustomModelWrapper(bilstm_model)
-        trainer = ModelTrainer(bilstm_wrapper)
-        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        bilstm_model.save('saved_models/BiLSTM')
-        print("BiLSTM model saved successfully!")
+            if name == 'CNN':
+                model, history = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
+            elif name == 'BiLSTM':
+                model, history = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
+            elif name == 'GRU':
+                model, history = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+            else:
+                trainer = ModelTrainer(model)
+                history = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
 
-        # GRU
-        print("\nTraining GRU model...")
-        gru_model, _ = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
-        gru_model.save('saved_models/GRU')
-        print("GRU model saved successfully!")
+            # 保存模型
+            print(f"Saving {name} model...")
+            model.save(f'saved_models/{name}.h5')
 
-        # Spatial-Only
-        print("\nTraining Spatial-Only model...")
-        spatial_model = SpatialOnlyModel()
-        trainer = ModelTrainer(spatial_model)
-        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        save_custom_model(spatial_model, 'saved_models/Spatial-Only')
-        print("Spatial-Only model saved successfully!")
+            # 保存训练历史
+            with open(f'saved_models/{name}_history.pkl', 'wb') as f:
+                pickle.dump(history.history, f)
 
-        # Temporal-Only
-        print("\nTraining Temporal-Only model...")
-        temporal_model = TemporalOnlyModel()
-        trainer = ModelTrainer(temporal_model)
-        trainer.train(X_train_dl, y_train, X_val_dl, y_val)
-        save_custom_model(temporal_model, 'saved_models/Temporal-Only')
-        print("Temporal-Only model saved successfully!")
-
-        print("\nAll models trained and saved successfully!")
-        print(f"Results generated at: {current_time} UTC")
-        print(f"Generated by: {current_user}")
+        print("\nAll models have been trained and saved successfully!")
 
     except Exception as e:
-        print(f"训练或保存过程中发生错误: {str(e)}")
-        import traceback
-
-        print(traceback.format_exc())
-        print(f"Error occurred at: {current_time} UTC")
-        print(f"User: {current_user}")
+        print(f"Error during training: {str(e)}")
