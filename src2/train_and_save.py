@@ -13,18 +13,19 @@ from params import config
 from sklearn.model_selection import train_test_split
 
 
-def save_model_weights(model, name):
-    """保存模型权重和结构"""
-    # 保存模型权重
-    model.save_weights(f'saved_models/{name}_weights.h5')
-    # 保存模型配置
-    model_config = model.get_config()
-    with open(f'saved_models/{name}_config.pkl', 'wb') as f:
-        pickle.dump(model_config, f)
+def save_model_and_weights(model, name):
+    """保存模型和权重"""
+    # 保存完整模型
+    model.save(f'saved_models/{name}_model')
+
+    # 保存训练历史（如果有）
+    if hasattr(model, 'history'):
+        with open(f'saved_models/{name}_history.pkl', 'wb') as f:
+            pickle.dump(model.history, f)
 
 
 if __name__ == "__main__":
-    current_time = "2025-04-28 03:29:09"
+    current_time = "2025-04-28 03:34:28"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -34,6 +35,10 @@ if __name__ == "__main__":
     print("\nLoading and preprocessing data...")
     loader = DataLoader("OPCUA_dataset_public.csv")
     X_train_full, X_test, y_train_full, y_test = loader.load_data()
+
+    print("\n=== 数据加载验证 ===")
+    print(f"特征矩阵形状: {X_train_full.shape} -> {X_test.shape}")
+    print(f"标签分布示例: {np.unique(y_train_full.argmax(axis=1), return_counts=True)}")
 
     # 数据分割
     print("Splitting data into train and validation sets...")
@@ -53,36 +58,35 @@ if __name__ == "__main__":
 
     try:
         # 训练和保存模型
-        models = {
-            'BiLSTM-CNN': BiLSTM_CNN(),
-            'CNN': CNN(),
-            'BiLSTM': BiLSTM(),
-            'GRU': None,  # 将在训练时创建
-            'Spatial-Only': SpatialOnlyModel(),
-            'Temporal-Only': TemporalOnlyModel()
+        models_config = {
+            'BiLSTM-CNN': {'class': BiLSTM_CNN, 'custom_train': False},
+            'CNN': {'class': CNN, 'custom_train': True},
+            'BiLSTM': {'class': BiLSTM, 'custom_train': True},
+            'GRU': {'class': None, 'custom_train': True},
+            'Spatial-Only': {'class': SpatialOnlyModel, 'custom_train': False},
+            'Temporal-Only': {'class': TemporalOnlyModel, 'custom_train': False}
         }
 
         # 训练和保存每个模型
-        for name, model in models.items():
+        for name, config in models_config.items():
             print(f"\nTraining {name} model...")
 
-            if name == 'CNN':
-                model, history = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
-            elif name == 'BiLSTM':
-                model, history = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
-            elif name == 'GRU':
-                model, history = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
+            if config['custom_train']:
+                if name == 'CNN':
+                    model, history = train_cnn(X_train_dl, y_train, X_val_dl, y_val)
+                elif name == 'BiLSTM':
+                    model, history = train_bilstm(X_train_dl, y_train, X_val_dl, y_val)
+                elif name == 'GRU':
+                    model, history = train_improved_gru(X_train_dl, y_train, X_val_dl, y_val)
             else:
+                model = config['class']()
                 trainer = ModelTrainer(model)
                 history = trainer.train(X_train_dl, y_train, X_val_dl, y_val)
+                model.history = history
 
-            # 保存模型权重和配置
+            # 保存模型和权重
             print(f"Saving {name} model...")
-            save_model_weights(model, name)
-
-            # 保存训练历史
-            with open(f'saved_models/{name}_history.pkl', 'wb') as f:
-                pickle.dump(history.history, f)
+            save_model_and_weights(model, name)
 
         print("\nAll models have been trained and saved successfully!")
 
