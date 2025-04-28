@@ -25,7 +25,7 @@ class ModelTrainer:
         history = self.model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
-            epochs=50,
+            epochs=20,
             batch_size=config.BATCH_SIZE,
             class_weight=config.CLASS_WEIGHTS,
             callbacks=[self.lr_scheduler, self.early_stop]
