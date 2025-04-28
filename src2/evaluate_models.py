@@ -1,13 +1,17 @@
-import os
-import numpy as np
 import tensorflow as tf
+import numpy as np
 import time
 from evaluator import ModelEvaluator
-
-# 获取当前脚本所在目录
-current_dir = os.path.dirname(os.path.abspath(__file__))
-saved_data_dir = os.path.join(current_dir, 'saved_data')
-saved_models_dir = os.path.join(current_dir, 'saved_models')
+from model import BiLSTM_CNN, TemporalAttention, SpatialAttention  # 导入自定义模型和层
+from data_loader import DataLoader
+from gru import train_improved_gru
+from model import BiLSTM_CNN
+from trainer import ModelTrainer
+from evaluator import ModelEvaluator
+from bilstm import BiLSTM, train_bilstm
+from cnn import CNN, train_cnn
+from ablation_models import SpatialOnlyModel, TemporalOnlyModel
+from tensorflow.keras.models import load_model
 
 
 def measure_detection_time(model, X_test):
@@ -30,8 +34,23 @@ def print_model_results(name, metrics):
     print(metrics['confusion_matrix'])
 
 
+def load_custom_model(model_path, model_type):
+    """加载自定义模型"""
+    custom_objects = {
+        'BiLSTM_CNN': BiLSTM_CNN,
+        'SpatialOnlyModel': SpatialOnlyModel,
+        'TemporalOnlyModel': TemporalOnlyModel,
+        'TemporalAttention': TemporalAttention,
+        'SpatialAttention': SpatialAttention
+    }
+
+    with tf.keras.utils.custom_object_scope(custom_objects):
+        model = load_model(model_path)
+    return model
+
+
 if __name__ == "__main__":
-    current_time = "2025-04-28 01:09:22"
+    current_time = "2025-04-28 02:33:08"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -39,28 +58,36 @@ if __name__ == "__main__":
 
     # 加载评估数据
     print("\nLoading evaluation data...")
-    try:
-        X_val = np.load(os.path.join(saved_data_dir, 'X_val.npy'))
-        y_val = np.load(os.path.join(saved_data_dir, 'y_val.npy'))
-        X_test = np.load(os.path.join(saved_data_dir, 'X_test.npy'))
-        y_test = np.load(os.path.join(saved_data_dir, 'y_test.npy'))
-        print("Data loaded successfully!")
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        raise
+    X_val = np.load('saved_data/X_val.npy')
+    y_val = np.load('saved_data/y_val.npy')
+    X_test = np.load('saved_data/X_test.npy')
+    y_test = np.load('saved_data/y_test.npy')
+    print("Data loaded successfully!")
 
     # 初始化评估器和结果字典
     evaluator = ModelEvaluator()
     results = {}
 
     try:
-        # 加载并评估所有模型
-        model_names = ['BiLSTM-CNN', 'CNN', 'BiLSTM', 'GRU', 'Spatial-Only', 'Temporal-Only']
+        # 定义模型配置
+        model_configs = {
+            'BiLSTM-CNN': {'custom': True},
+            'CNN': {'custom': False},
+            'BiLSTM': {'custom': False},
+            'GRU': {'custom': False},
+            'Spatial-Only': {'custom': True},
+            'Temporal-Only': {'custom': True}
+        }
 
-        for model_name in model_names:
+        # 加载并评估所有模型
+        for model_name, config in model_configs.items():
             print(f"\nEvaluating {model_name} model...")
-            model_path = os.path.join(saved_models_dir, f'{model_name}.h5')
-            model = tf.keras.models.load_model(model_path)
+
+            # 根据模型类型选择加载方式
+            if config['custom']:
+                model = load_custom_model(f'saved_models/{model_name}.h5', model_name)
+            else:
+                model = tf.keras.models.load_model(f'saved_models/{model_name}.h5')
 
             # 在测试集上评估
             results[model_name] = evaluator.evaluate(model, X_test, y_test)
@@ -91,5 +118,8 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"评估过程中发生错误: {str(e)}")
+        import traceback
+
+        print(traceback.format_exc())  # 打印完整的错误堆栈
         print(f"Error occurred at: {current_time} UTC")
         print(f"User: {current_user}")
