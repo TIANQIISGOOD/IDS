@@ -2,6 +2,12 @@ import numpy as np
 import tensorflow as tf
 import time
 from evaluator import ModelEvaluator
+# 导入自定义模型和层
+from model import BiLSTM_CNN, TemporalAttention, SpatialAttention
+from bilstm import BiLSTM
+from cnn import CNN
+from gru import GRU
+from ablation_models import SpatialOnlyModel, TemporalOnlyModel
 
 
 def measure_detection_time(model, X_test):
@@ -25,7 +31,7 @@ def print_model_results(name, metrics):
 
 
 if __name__ == "__main__":
-    current_time = "2025-04-28 03:18:50"
+    current_time = "2025-04-28 03:26:40"
     current_user = "TIANQIISGOOD"
     print(f"Execution Time (UTC): {current_time}")
     print(f"User: {current_user}")
@@ -46,12 +52,25 @@ if __name__ == "__main__":
     model_names = ['BiLSTM-CNN', 'CNN', 'BiLSTM', 'GRU', 'Spatial-Only', 'Temporal-Only']
 
     try:
+        # 创建自定义对象字典
+        custom_objects = {
+            'BiLSTM_CNN': BiLSTM_CNN,
+            'TemporalAttention': TemporalAttention,
+            'SpatialAttention': SpatialAttention,
+            'BiLSTM': BiLSTM,
+            'CNN': CNN,
+            'GRU': GRU,
+            'SpatialOnlyModel': SpatialOnlyModel,
+            'TemporalOnlyModel': TemporalOnlyModel
+        }
+
         # 加载并评估每个模型
         for name in model_names:
             print(f"\nLoading and evaluating {name} model...")
 
-            # 加载模型
-            model = tf.keras.models.load_model(f'saved_models/{name}.h5')
+            # 使用自定义对象作用域加载模型
+            with tf.keras.utils.custom_object_scope(custom_objects):
+                model = tf.keras.models.load_model(f'saved_models/{name}.h5')
 
             # 评估模型
             results[name] = evaluator.evaluate(model, X_test, y_test)
